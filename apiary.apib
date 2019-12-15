@@ -1,0 +1,277 @@
+FORMAT: 1A
+HOST: http://localhost:5000
+
+# UPA
+
+> College project which aims to create system using Multimedia and Spatial Oracle database
+
+**Online**: http://upa-team.herokuapp.com
+
+**Project**: https://gitlab.com/Aisik/upa-fit-vut
+
+**API specs**: https://github.com/Vondry/REST-UPA
+
+
+## Data Structures
+### Project (object)
+- id (number, required) - unique project ID
+- name (string, required) - name of project
+
+### Shape (object)
+- id (number, required) - unix timestamp in ms, when shape was created. Must be unique among shapes.
+- type: polygon, polyline, rectangle, circle (enum, required)
+- points: "x,y x,y, ..." (string, required) - polygon, polyline and rectangle will follow "x0,y0 x1,y1 ... xN,yN". Circle has "x0,y0 radius". Camera has "x0,y0 x0,y0 x1,y1 x2,y2", where x0 and y0 is starting point of camera.
+
+### MultiShape (object)
+- id (number, required) - unix timestamp in ms, when shape was created. Must be unique among shapes.
+- type: "collection" (string, required)
+- shapes (array[Shape])
+
+### Response (object)
+- message (string) - describes what happended. May be completely ommitted when returned with status code 200, otherwise invalid R-Cycle, R-Area or something else was wrong.
+
+### Analytics (object)
+- shapesArea (number, required) - area covered by shapes (polygon, circle, rectangle)
+- areaCoveredByCameras (number, required) - PERCENTAGE of area which is covered by cameras. So camera which is not in any shape does not cover anything.
+- overlappingCamerasArea (number, required) - PERCENTAGE of area, where cameras are overlapping.
+
+### Image (object)
+- id (number, required) - unix timestamp in ms, when image was created. Must be unique among images.
+- src (string, required) - source of image
+
+### SimilarityImage (object)
+- id (number, required) - unix timestamp in ms, when image was created. Must be unique among images.
+- similarity (number, required)
+
+# Group Project
+## Projects [/projects]
+
+### Get all projects [GET]
++ Response 200 (application/json)
+    + Attributes (array[Project])
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
+
+## Specific project operation [/projects/{id}]
+### Create new project [PUT]
++ Request (application/json)
+    + Attributes
+        - Include Project
+
++ Response 200 (application/json)
+     + Attributes (object)
+        - Include Response
+
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
+
+### Delete project [DELETE]
+
++ Request (application/json)
+
++ Response 200 (application/json)
+     + Attributes (object)
+        - Include Response
+
++ Response 400 (application/json)
+Deletion failed for some reason.
+     + Attributes (object)
+        - Include Response
+
+# Group Shape
+
+Shapes related operations
+
+**Supported shapes:**
+- polygon `(points)`
+- polyline `(points)`
+- multiShape
+- rectangle `(points)`
+- camera `(point, polygon`)
+
+## Shapes [/projects/{id}/shapes]
+
+### Get all shapes [GET]
+
++ Response 200 (application/json)
+    + Attributes (object)
+        - analytics (Analytics)
+        - shapes (array[Shape, MultiShape])
+
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
+
+## Specific shape operation [/projects/{id}/shapes/{id}]
+
+### Create new shape [PUT]
+
++ Request (application/json)
+     + Attributes (object)
+        - Include Shape
+
++ Response 200 (application/json)
+     + Attributes (object)
+        - Include Response
+        - analytics (Analytics)
+        - camera (Shape)
+
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
+
+### Delete shape [DELETE]
+
++ Request (application/json)
+
++ Response 200 (application/json)
+     + Attributes (object)
+        - Include Response
+        - analytics (Analytics)
+        - cameraIds (array[number])
++ Response 400 (application/json)
+Deletion failed for some reason.
+     + Attributes (object)
+        - Include Response
+
+## Update shape points [/projects/{id}/shapes/{id}/points]
+- User moved with **single point**.
+- Some points in given object has been changed.
+- Shape validation must be done.
+
+### Update shape points [PATCH]
+
++ Request (application/json)
+    + Attributes (object)
+        - points (array[string]) - points specified in Shape structure
+
++ Response 200 (application/json)
+Points does not break any spatial rules on given shape.
+     + Attributes (object)
+        - Include Response
+        - analytics (Analytics)
+
++ Response 400 (application/json)
+Points does break some spatial rules on given shape.
+     + Attributes (object)
+        - shape
+            - One of
+                - Include Shape
+                - Include MultiShape
+        - Include Response
+        - analytics (Analytics)
+
+## Update shape position based on drag [/projects/{id}/shapes/{id}/drag]
+- User moved with **whole shape**.
+- All points in given object may have been changed.
+- Shape validation must be done.
+
+### Update shape position based on drag [PATCH]
+
++ Request (application/json)
+    + Attributes
+        - coords: [0,0] (array[number]) - All points must be updated based on coords
+
++ Response 200 (application/json)
+Points does not break any spatial rules on given shape.
+     + Attributes (object)
+        - Include Response
+        - analytics (Analytics)
+
++ Response 400 (application/json)
+Points does break some spatial rules on given shape.
+     + Attributes (object)
+        - shape
+            - One of
+                - Include Shape
+                - Include MultiShape
+        - Include Response
+
+## Group shapes [/projects/{id}/shapes/{id}/group]
+
+### Group shapes [POST]
+
++ Request (application/json)
+    + Attributes
+        - ids (array[number]) - ids of shapes wich will be grouped
+
++ Response 200 (application/json)
+     + Attributes (object)
+        - Include Response
+
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
+
+
+# Group Images
+
+## Images [/images]
+
+### Get all images [GET]
+
++ Response 200 (application/json)
+    + Attributes (array[Image])
+
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
+
+
+## Specific image operation [/images/{id}]
+
+### Create new image [PUT]
+
++ Request (application/json)
+    + Attributes
+        - Include Image
+
++ Response 200 (application/json)
+     + Attributes (object)
+        - Include Response
+        - src (string, required) - image location on server
+
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
+
+### Delete image [DELETE]
+
++ Request (application/json)
+
++ Response 200 (application/json)
+     + Attributes (object)
+        - Include Response
+
++ Response 400 (application/json)
+Deletion failed for some reason.
+     + Attributes (object)
+        - Include Response
+
+## Similarity images [/images/{id}/similarity]
+
+### Similarity images [GET]
+
++ Response 200 (application/json)
+    + Attributes (array[SimilarityImage])
+
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
+
+## Rotate images [/images/{id}/rotate/{degrees}]
+
+- degrees are expected to be one of: 0,90,180,270
+
+### Rotate images[GET]
+
++ Response 200 (application/json)
+    + Attributes (object)
+        - Include Response
+        - src (string) - image path
+
++ Response 400 (application/json)
+     + Attributes (object)
+        - Include Response
